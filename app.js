@@ -1,9 +1,8 @@
-const STORAGE_KEY = "mealloop.saved.v1";
+const STORAGE_KEY = "mealmatch.saved.v1";
 const FILTERS = {
   all: "all",
   quick: "quick",
   cheap: "cheap",
-  favorites: "favorites",
 };
 
 const mealDeck = [
@@ -315,6 +314,7 @@ const state = {
   currentIndex: 0,
   savedMeals: loadSavedMeals(),
   filter: FILTERS.all,
+  lastAction: null,
   drag: {
     active: false,
     pointerId: null,
@@ -324,6 +324,7 @@ const state = {
     currentY: 0,
   },
   toastTimer: null,
+  toastUndoHandler: null,
 };
 
 const elements = {
@@ -339,7 +340,8 @@ const elements = {
   savedResults: document.getElementById("saved-results"),
   savedEmpty: document.getElementById("saved-empty"),
   savedBadge: document.getElementById("saved-badge"),
-  deckCount: document.getElementById("deck-count"),
+  toastMessage: document.getElementById("toast-message"),
+  toastAction: document.getElementById("toast-action"),
   toast: document.getElementById("toast"),
   filterChips: document.querySelectorAll(".filter-chip"),
 };
@@ -364,10 +366,6 @@ function loadSavedMeals() {
 
 function persistSavedMeals() {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.savedMeals));
-}
-
-function mealById(id) {
-  return mealDeck.find((meal) => meal.id === id);
 }
 
 function getCurrentMeal() {
@@ -410,12 +408,32 @@ function openView(view) {
 
 function showToast(message) {
   clearTimeout(state.toastTimer);
-  elements.toast.textContent = message;
+  elements.toastMessage.textContent = message;
+  elements.toastAction.hidden = true;
   elements.toast.classList.add("visible");
 
   state.toastTimer = window.setTimeout(() => {
     elements.toast.classList.remove("visible");
   }, 1700);
+}
+
+function showUndoToast(message, undoHandler) {
+  clearTimeout(state.toastTimer);
+  state.toastUndoHandler = undoHandler;
+  elements.toastMessage.textContent = message;
+  elements.toastAction.hidden = false;
+  elements.toast.classList.add("visible");
+
+  state.toastTimer = window.setTimeout(() => {
+    clearToast();
+  }, 2200);
+}
+
+function clearToast() {
+  clearTimeout(state.toastTimer);
+  state.toastTimer = null;
+  state.toastUndoHandler = null;
+  elements.toast.classList.remove("visible");
 }
 
 function isSaved(id) {
@@ -424,7 +442,7 @@ function isSaved(id) {
 
 function saveMeal(meal) {
   if (!meal) {
-    return;
+    return false;
   }
 
   const alreadySaved = isSaved(meal.id);
@@ -441,18 +459,37 @@ function saveMeal(meal) {
     updateSavedBadge();
   }
 
-  renderSaved();
-  showToast(
-    alreadySaved ? `${meal.name} is already saved.` : `Saved ${meal.name}.`,
-  );
+  return !alreadySaved;
 }
 
 function skipMeal(meal) {
   if (!meal) {
     return;
   }
+}
 
-  showToast(`Skipped ${meal.name}.`);
+function removeSavedMeal(id) {
+  state.savedMeals = state.savedMeals.filter((meal) => meal.id !== id);
+  persistSavedMeals();
+  updateSavedBadge();
+}
+
+function undoLastAction() {
+  const action = state.lastAction;
+  if (!action) {
+    return;
+  }
+
+  if (action.type === "save" && action.addedToSaved) {
+    removeSavedMeal(action.meal.id);
+  }
+
+  state.currentIndex = action.prevIndex;
+  state.lastAction = null;
+  window.__mealMatchLastAction = state.lastAction;
+  clearToast();
+  renderSaved();
+  renderDiscover();
 }
 
 function advanceDeck(action) {
@@ -466,6 +503,7 @@ function advanceDeck(action) {
     return;
   }
 
+  const previousIndex = state.currentIndex;
   card.classList.remove("swiping-save", "swiping-skip", "dragging");
   card.style.transition = "transform 240ms ease, opacity 240ms ease";
   card.style.transform =
@@ -475,14 +513,26 @@ function advanceDeck(action) {
   card.style.opacity = "0";
 
   window.setTimeout(() => {
+    let addedToSaved = false;
+
     if (action === "save") {
-      saveMeal(currentMeal);
+      addedToSaved = saveMeal(currentMeal);
     } else {
       skipMeal(currentMeal);
     }
 
+    state.lastAction = {
+      type: action,
+      meal: currentMeal,
+      prevIndex: previousIndex,
+      addedToSaved,
+    };
+    window.__mealMatchLastAction = state.lastAction;
+
+    showUndoToast(action === "save" ? "Saved." : "Skipped.", undoLastAction);
+
     nextMealIndex();
-  }, 180);
+  }, 260);
 }
 
 function renderDiscover() {
@@ -491,22 +541,16 @@ function renderDiscover() {
     state.currentIndex,
     state.currentIndex + 2,
   );
-  elements.deckCount.textContent = Math.max(
-    mealDeck.length - state.currentIndex,
-    0,
-  );
+  window.__mealMatchCurrentIndex = state.currentIndex;
   elements.cardStack.innerHTML = "";
 
   if (!currentMeal) {
     const endCard = document.createElement("article");
     endCard.className = "card-face top";
     endCard.innerHTML = `
-      <div class="card-body" style="justify-content:center; gap:16px; min-height: 100%; text-align: left;">
-        <div>
-          <p class="section-label">All caught up</p>
-          <h3 style="margin-top:12px; max-width: 10ch;">You've seen today's picks.</h3>
-        </div>
-        <p class="card-note" style="max-width: 24ch;">Your saved meals are ready whenever you want to come back later.</p>
+      <div class="card-body card-empty-state">
+        <h3>You're caught up.</h3>
+        <p>Come back later or review your saved meals.</p>
         <div class="hero-actions" style="margin-top: 4px;">
           <button class="primary-button" type="button" data-nav="saved">Saved Meals</button>
           <button class="secondary-button" type="button" id="restart-discovery">Start Over</button>
@@ -514,6 +558,7 @@ function renderDiscover() {
       </div>
     `;
     elements.cardStack.appendChild(endCard);
+    elements.toastAction.hidden = true;
     const restartButton = endCard.querySelector("#restart-discovery");
     restartButton?.addEventListener("click", () => {
       state.currentIndex = 0;
@@ -536,9 +581,9 @@ function renderDiscover() {
     const ghostCard = document.createElement("article");
     ghostCard.className = "card-face back";
     ghostCard.innerHTML = `
-      <div class="card-body" style="justify-content:center; gap:12px; min-height: 100%;">
-        <p class="section-label">Next up</p>
-        <h3 style="margin:0; max-width: 8ch;">More meals are on the way.</h3>
+      <div class="card-body card-empty-state">
+        <h3>More meals are on the way.</h3>
+        <p>Keep swiping for the full set.</p>
       </div>
     `;
     elements.cardStack.appendChild(ghostCard);
@@ -563,35 +608,12 @@ function createMealCard(meal, isInteractive) {
   card.innerHTML = `
     <div class="card-media">
       <img src="${meal.image}" alt="${meal.name}" />
-      <div class="card-overlay">
-        <div class="card-ribbon skip"><span></span> Skip</div>
-        <div class="card-ribbon save"><span></span> Save</div>
-      </div>
-      <div class="swipe-state" data-state="skip"></div>
-      <div class="swipe-state" data-state="save"></div>
     </div>
     <div class="card-body">
-      <div class="card-heading">
-        <div>
-          <p class="section-label">Meal idea</p>
-          <h3>${meal.name}</h3>
-        </div>
-        <span class="badge">${meal.cost} Budget</span>
-      </div>
-      <div class="card-badges">
-        <span class="meta-pill">${meal.time} min</span>
-        <span class="meta-pill">${meal.difficulty}</span>
-        <span class="meta-pill">${meal.ingredients} ingredients</span>
-      </div>
-      <p class="card-note">${meal.note}</p>
+      <h3>${meal.name}</h3>
+      <p class="meta-band" aria-label="Meal details">${meal.time} min | ${meal.difficulty} | ${meal.ingredients} ingredients | ${meal.cost}</p>
     </div>
   `;
-
-  card.addEventListener("click", (event) => {
-    if (event.target.closest("button")) {
-      return;
-    }
-  });
 
   card.addEventListener("keydown", (event) => {
     if (event.key === "ArrowLeft") {
@@ -689,25 +711,6 @@ function updateSavedBadge() {
   elements.savedBadge.textContent = String(state.savedMeals.length);
 }
 
-function toggleFavorite(id) {
-  let nextFavorite = false;
-  state.savedMeals = state.savedMeals.map((meal) => {
-    if (meal.id !== id) {
-      return meal;
-    }
-
-    nextFavorite = !meal.favorite;
-    return {
-      ...meal,
-      favorite: nextFavorite,
-    };
-  });
-
-  persistSavedMeals();
-  renderSaved();
-  return nextFavorite;
-}
-
 function setFilter(filter) {
   state.filter = filter;
   elements.filterChips.forEach((chip) =>
@@ -723,10 +726,6 @@ function matchesFilter(meal) {
 
   if (state.filter === FILTERS.cheap) {
     return meal.cost === "$";
-  }
-
-  if (state.filter === FILTERS.favorites) {
-    return Boolean(meal.favorite);
   }
 
   return true;
@@ -758,8 +757,7 @@ function renderSaved() {
         </svg>
       </div>
       <h3>No meals in this filter.</h3>
-      <p>Try another filter or save more meals from Discover.</p>
-      <button class="primary-button" type="button" data-nav="discover">Explore Meals</button>
+      <p>Try another filter or save more meals.</p>
     `;
     elements.savedResults.appendChild(emptyFilter);
     return;
@@ -771,31 +769,14 @@ function renderSaved() {
     card.innerHTML = `
       <img src="${meal.image}" alt="${meal.name}" />
       <div class="saved-card-body">
-        <div class="saved-card-head">
-          <div>
-            <h3>${meal.name}</h3>
-            <p class="saved-meta">${meal.time} min · ${meal.difficulty}</p>
-          </div>
-          <button class="favorite-toggle" type="button" aria-label="Toggle favorite for ${meal.name}" data-active="${meal.favorite ? "true" : "false"}">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.4C1 8 2.9 4.5 6.5 4.2c2.1-.2 3.9 1 5 2.4 1.1-1.4 2.9-2.6 5-2.4 3.6.3 5.5 3.8 3.7 7.4C19 15.6 12 20 12 20Z" /></svg>
-          </button>
-        </div>
+        <h3>${meal.name}</h3>
+        <p class="saved-meta">${meal.time} min · ${meal.difficulty}</p>
         <div class="meta-row">
-          <span class="meta-pill">${meal.cost} Budget</span>
           <span class="meta-pill">${meal.ingredients} ingredients</span>
-          <span class="meta-pill">${meal.favorite ? "Favorited" : "Saved"}</span>
+          <span class="meta-pill">${meal.cost}</span>
         </div>
       </div>
     `;
-
-    card.querySelector(".favorite-toggle")?.addEventListener("click", () => {
-      const nextFavorite = toggleFavorite(meal.id);
-      showToast(
-        nextFavorite
-          ? `${meal.name} added to favorites.`
-          : `${meal.name} removed from favorites.`,
-      );
-    });
 
     elements.savedResults.appendChild(card);
   });
@@ -815,6 +796,12 @@ function bindNavigation() {
   elements.skipButton.addEventListener("click", () => advanceDeck("skip"));
   elements.saveButton.addEventListener("click", () => advanceDeck("save"));
 
+  elements.toastAction.addEventListener("click", () => {
+    if (state.toastUndoHandler) {
+      state.toastUndoHandler();
+    }
+  });
+
   elements.filterChips.forEach((chip) => {
     chip.addEventListener("click", () => {
       if (chip.dataset.filter) {
@@ -827,6 +814,8 @@ function bindNavigation() {
 function init() {
   bindNavigation();
   applyArtwork();
+  elements.toastAction.hidden = true;
+  window.__mealMatchUndoLastAction = undoLastAction;
   updateSavedBadge();
   renderDiscover();
   renderSaved();

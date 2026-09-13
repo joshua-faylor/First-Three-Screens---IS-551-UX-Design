@@ -1,4 +1,4 @@
-# MealLoop Prototype
+# Meal Match Prototype
 
 A small static front-end prototype for a college student meal discovery app.
 
