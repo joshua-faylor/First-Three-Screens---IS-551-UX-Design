@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MealLoop - Find your next meal</title>
+    <title>Meal Match - Find your next meal</title>
     <meta
       name="description"
       content="A mobile-first meal discovery prototype for busy college students."
@@ -23,20 +23,12 @@
       <div class="backdrop backdrop-b"></div>
 
       <header class="topbar">
-        <div class="brand-lockup" aria-label="MealLoop">
-          <div class="brand-mark">ML</div>
+        <div class="brand-lockup" aria-label="Meal Match">
+          <div class="brand-mark">MM</div>
           <div>
-            <p class="eyebrow">MealLoop</p>
-            <p class="topbar-subtitle">Fast meal ideas for student schedules</p>
+            <p class="eyebrow">Meal Match</p>
           </div>
         </div>
-        <button class="icon-button" type="button" aria-label="Profile">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M12 12.2a4.4 4.4 0 1 0 0-8.8 4.4 4.4 0 0 0 0 8.8Zm0 2.5c-4.3 0-7.8 2.4-7.8 5.3V21h15.6v-.9c0-2.9-3.5-5.3-7.8-5.3Z"
-            />
-          </svg>
-        </button>
       </header>
 
       <main class="screen-stack" aria-live="polite">
@@ -46,13 +38,35 @@
           data-screen="home"
           aria-labelledby="home-title"
         >
+          <div class="landing-art" aria-hidden="true">
+            <img
+              class="landing-art-item art-1"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="quesadilla"
+              alt=""
+            />
+            <img
+              class="landing-art-item art-2"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="teriyaki"
+              alt=""
+            />
+            <img
+              class="landing-art-item art-3"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="grilled-cheese"
+              alt=""
+            />
+            <img
+              class="landing-art-item art-4"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="pesto"
+              alt=""
+            />
+          </div>
+
           <div class="hero-card">
-            <p class="hero-kicker">Quick, budget-friendly, not repetitive</p>
             <h1 id="home-title">Find something worth eating.</h1>
-            <p class="hero-copy">
-              Discover simple meals, save the ones you want, and get back to
-              class.
-            </p>
             <div class="hero-actions">
               <button class="primary-button" type="button" data-nav="discover">
                 Explore Meals
@@ -62,63 +76,14 @@
               </button>
             </div>
           </div>
-
-          <div class="preview-strip" aria-label="Featured meals">
-            <article class="preview-card preview-card-large">
-              <img
-                src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-                data-art-for="teriyaki"
-                alt="Plate of rice and vegetables"
-              />
-              <div>
-                <p class="preview-title">Teriyaki rice bowl</p>
-                <p class="preview-meta">20 min · Budget friendly</p>
-              </div>
-            </article>
-            <div class="mini-grid">
-              <article class="mini-card">
-                <img
-                  src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-                  data-art-for="grilled-cheese"
-                  alt="Grilled cheese sandwich"
-                />
-                <div>
-                  <p>Grilled cheese</p>
-                  <span>10 min</span>
-                </div>
-              </article>
-              <article class="mini-card">
-                <img
-                  src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-                  data-art-for="pesto"
-                  alt="Pasta with pesto"
-                />
-                <div>
-                  <p>Pesto pasta</p>
-                  <span>15 min</span>
-                </div>
-              </article>
-            </div>
-          </div>
         </section>
 
         <section
           class="screen"
           id="discover-screen"
           data-screen="discover"
-          aria-labelledby="discover-title"
+          aria-label="Meal discovery"
         >
-          <div class="screen-header">
-            <div>
-              <p class="section-label">Discover</p>
-              <h2 id="discover-title">Tap save or swipe right.</h2>
-            </div>
-            <div class="screen-stat">
-              <span id="deck-count">0</span>
-              <small>Meals left</small>
-            </div>
-          </div>
-
           <div class="deck-stage">
             <div
               class="card-stack"
@@ -127,30 +92,36 @@
             ></div>
           </div>
 
-          <div class="action-row">
+          <div class="swipe-controls" aria-label="Meal actions">
             <button
-              class="round-action skip-action"
+              class="swipe-control reject-control"
               type="button"
               id="skip-button"
               aria-label="Skip meal"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 7 17 17M17 7 7 17" />
-              </svg>
-              <span>Skip</span>
+              <span class="swipe-control-icons" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 12h11M10 6l-6 6 6 6" />
+                </svg>
+                <svg viewBox="0 0 24 24"><path d="M7 7 17 17M17 7 7 17" /></svg>
+              </span>
             </button>
             <button
-              class="round-action save-action"
+              class="swipe-control save-control"
               type="button"
               id="save-button"
               aria-label="Save meal"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 20s-7-4.4-9.2-8.4C1 8 2.9 4.5 6.5 4.2c2.1-.2 3.9 1 5 2.4 1.1-1.4 2.9-2.6 5-2.4 3.6.3 5.5 3.8 3.7 7.4C19 15.6 12 20 12 20Z"
-                />
-              </svg>
-              <span>Save</span>
+              <span class="swipe-control-icons" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M20 12h-11M14 6l6 6-6 6" />
+                </svg>
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 20s-7-4.4-9.2-8.4C1 8 2.9 4.5 6.5 4.2c2.1-.2 3.9 1 5 2.4 1.1-1.4 2.9-2.6 5-2.4 3.6.3 5.5 3.8 3.7 7.4C19 15.6 12 20 12 20Z"
+                  />
+                </svg>
+              </span>
             </button>
           </div>
         </section>
@@ -161,14 +132,8 @@
           data-screen="saved"
           aria-labelledby="saved-title"
         >
-          <div class="screen-header saved-header">
-            <div>
-              <p class="section-label">Saved</p>
-              <h2 id="saved-title">Meals to come back to.</h2>
-            </div>
-            <button class="text-button" type="button" data-nav="discover">
-              Find more
-            </button>
+          <div class="saved-header">
+            <h2 id="saved-title">Your saved meals</h2>
           </div>
 
           <div
@@ -184,9 +149,6 @@
             </button>
             <button class="filter-chip" type="button" data-filter="cheap">
               Cheap
-            </button>
-            <button class="filter-chip" type="button" data-filter="favorites">
-              Favorites
             </button>
           </div>
 
@@ -233,10 +195,7 @@
               </svg>
             </div>
             <h3>No saved meals yet.</h3>
-            <p>Save a few ideas from Discover and they will show up here.</p>
-            <button class="primary-button" type="button" data-nav="discover">
-              Explore Meals
-            </button>
+            <p>Save a few ideas and they will show up here.</p>
           </div>
         </section>
       </main>
@@ -272,7 +231,20 @@
         </button>
       </nav>
 
-      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite">
+        <span id="toast-message"></span>
+        <button
+          class="toast-action"
+          type="button"
+          id="toast-action"
+          onclick="
+            window.__mealMatchUndoLastAction &&
+              window.__mealMatchUndoLastAction()
+          "
+        >
+          Undo
+        </button>
+      </div>
     </div>
   </body>
 </html>
