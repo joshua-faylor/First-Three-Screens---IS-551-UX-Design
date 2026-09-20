@@ -38,7 +38,7 @@
           data-screen="home"
           aria-labelledby="home-title"
         >
-          <div class="landing-art" aria-hidden="true">
+          <div class="landing-art landing-art-top" aria-hidden="true">
             <img
               class="landing-art-item art-1"
               src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
@@ -49,18 +49,6 @@
               class="landing-art-item art-2"
               src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
               data-art-for="teriyaki"
-              alt=""
-            />
-            <img
-              class="landing-art-item art-3"
-              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-              data-art-for="grilled-cheese"
-              alt=""
-            />
-            <img
-              class="landing-art-item art-4"
-              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-              data-art-for="pesto"
               alt=""
             />
           </div>
@@ -75,6 +63,20 @@
                 Saved Meals
               </button>
             </div>
+          </div>
+          <div class="landing-art landing-art-bottom" aria-hidden="true">
+            <img
+              class="landing-art-item art-3"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="grilled-cheese"
+              alt=""
+            />
+            <img
+              class="landing-art-item art-4"
+              src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+              data-art-for="pesto"
+              alt=""
+            />
           </div>
         </section>
 
@@ -249,6 +251,15 @@
           Undo
         </button>
       </div>
+      <dialog id="remove-dialog" class="remove-dialog" aria-labelledby="remove-title" aria-describedby="remove-description">
+        <h2 id="remove-title">Remove saved meal?</h2>
+        <p id="remove-description"></p>
+        <p id="remove-error" class="hidden" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" id="cancel-remove" autofocus>Cancel</button>
+          <button type="button" class="primary-button destructive-button" id="confirm-remove">Remove</button>
+        </div>
+      </dialog>
     </div>
   </body>
 </html>

@@ -5,132 +5,75 @@ const FILTERS = {
   cheap: "cheap",
 };
 
+// One catalog keeps saved IDs, recommendation metadata, and artwork consistent.
+// Rows: ID, name, minutes, ingredients, price, illustration scene, food color.
 const mealDeck = [
-  {
-    id: "quesadilla",
-    name: "Chicken quesadillas",
-    time: 15,
-    difficulty: "Easy",
-    ingredients: 7,
-    cost: "$",
-    image: "",
-    note: "Crispy, filling, and easy to make with leftovers.",
-    tags: ["quick", "cheap"],
-  },
-  {
-    id: "teriyaki",
-    name: "Teriyaki rice bowl",
-    time: 20,
-    difficulty: "Easy",
-    ingredients: 8,
-    cost: "$$",
-    image: "",
-    note: "A fast bowl meal that feels like takeout without the price.",
-    tags: ["quick"],
-  },
-  {
-    id: "pesto",
-    name: "Pesto pasta",
-    time: 15,
-    difficulty: "Easy",
-    ingredients: 6,
-    cost: "$",
-    image: "",
-    note: "Pantry-friendly and easy to scale for leftovers.",
-    tags: ["quick", "cheap"],
-  },
-  {
-    id: "breakfast-burrito",
-    name: "Breakfast burritos",
-    time: 12,
-    difficulty: "Easy",
-    ingredients: 7,
-    cost: "$",
-    image: "",
-    note: "A solid anytime meal when you need something fast.",
-    tags: ["quick", "cheap"],
-  },
-  {
-    id: "sheet-pan",
-    name: "Sheet pan chicken and vegetables",
-    time: 30,
-    difficulty: "Easy",
-    ingredients: 9,
-    cost: "$$",
-    image: "",
-    note: "One pan, minimal cleanup, and easy to portion.",
-    tags: [],
-  },
-  {
-    id: "grilled-cheese",
-    name: "Grilled cheese and tomato soup",
-    time: 10,
-    difficulty: "Easy",
-    ingredients: 5,
-    cost: "$",
-    image: "",
-    note: "Comfort food with almost no prep overhead.",
-    tags: ["quick", "cheap"],
-  },
-  {
-    id: "street-tacos",
-    name: "Chickpea street tacos",
-    time: 18,
-    difficulty: "Easy",
-    ingredients: 9,
-    cost: "$",
-    image: "",
-    note: "Cheap, customizable, and easy to keep interesting.",
-    tags: ["quick", "cheap"],
-  },
-  {
-    id: "sweet-potato",
-    name: "Loaded sweet potato bowls",
-    time: 25,
-    difficulty: "Medium",
-    ingredients: 8,
-    cost: "$",
-    image: "",
-    note: "Budget-friendly comfort with a little more variety.",
-    tags: ["cheap"],
-  },
-];
-
-// Curated prototype families, ordered from small swaps to new preparations/cuisines.
-// These are illustrative estimates, not learned preferences or recipe calculations.
+  ["quesadilla", "Chicken Quesadillas", 15, 7, "$", "quesadilla", "#df9b50"],
+  ["teriyaki", "Teriyaki Chicken Bowl", 20, 8, "$$", "teriyaki", "#945833"],
+  ["pesto", "Chicken Pesto Pasta", 20, 8, "$$", "pesto", "#7c9855"],
+  ["breakfast-burrito", "Breakfast Burritos", 12, 7, "$", "breakfast-burrito", "#e2b852"],
+  ["sheet-pan", "Sheet Pan Chicken and Vegetables", 30, 9, "$$", "sheet-pan", "#c98049"],
+  ["grilled-cheese", "Grilled Cheese and Tomato Soup", 10, 5, "$", "grilled-cheese", "#e5b45c"],
+  ["street-tacos", "Chickpea Street Tacos", 18, 9, "$", "street-tacos", "#c99557"],
+  ["sweet-potato", "Loaded Sweet Potato Bowls", 25, 8, "$", "sweet-potato", "#d07b3c"],
+  ["alfredo", "Chicken Alfredo", 25, 8, "$$", "pasta", "#e8d5ac"],
+  ["parmesan", "Chicken Parmesan Pasta", 30, 9, "$$", "pasta", "#bc5940"],
+  ["tomato-pasta", "Tomato Basil Pasta", 20, 6, "$", "pasta", "#d96d4c"],
+  ["tuscan", "Creamy Tuscan Chicken", 30, 10, "$$", "skillet", "#dcbf8d"],
+  ["tikka", "Chicken Tikka Masala", 35, 12, "$$", "curry", "#cc7142"],
+  ["chicken-tacos", "Chicken Tacos", 15, 7, "$", "street-tacos", "#d1a16b"],
+  ["enchiladas", "Chicken Enchiladas", 30, 9, "$$", "baked", "#bd5944"],
+  ["southwest", "Southwest Chicken Bowl", 20, 9, "$$", "salad", "#d5a45b"],
+  ["shawarma", "Chicken Shawarma Wrap", 25, 10, "$$", "wrap", "#c29761"],
+  ["fried-rice", "Chicken Fried Rice", 20, 8, "$", "rice", "#d7b769"],
+  ["beef-broccoli", "Beef and Broccoli Rice Bowl", 25, 9, "$$", "rice", "#885941"],
+  ["korean-beef", "Korean Beef Rice Bowl", 25, 10, "$$", "rice", "#a96540"],
+  ["peanut-noodles", "Thai Peanut Noodles", 20, 10, "$$", "noodles", "#bc915d"],
+  ["turkey-melt", "Turkey Pesto Melt", 15, 7, "$$", "sandwich", "#90a167"],
+  ["tomato-soup", "Tomato Basil Soup with Toast", 25, 7, "$", "soup", "#c96043"],
+  ["flatbread", "BBQ Chicken Flatbread", 20, 8, "$$", "flatbread", "#9b593f"],
+  ["baked-potato", "Loaded Baked Potatoes", 30, 7, "$", "potato", "#dfc681"],
+  ["breakfast-tacos", "Breakfast Tacos", 15, 7, "$", "street-tacos", "#edc957"],
+  ["lentil-curry", "Coconut Lentil Curry", 30, 10, "$", "curry", "#d5ac52"],
+  ["chickpea-salad", "Mediterranean Chickpea Salad", 15, 9, "$", "salad", "#b6bd7b"],
+].map(([id, name, time, ingredients, cost, artId, foodColor]) => ({
+  id, name, time, ingredients, cost, artId, foodColor,
+  difficulty: time > 30 ? "Medium" : "Easy", image: "",
+}));
+const mealsById = new Map(mealDeck.map((meal) => [meal.id, meal]));
 const familiarityLabels = ["Very Familiar", "A Little Different", "Something New", "Adventurous"];
-const familyForMeal = {
-  quesadilla: "wraps", "breakfast-burrito": "wraps", "street-tacos": "wraps",
-  teriyaki: "bowls", "sweet-potato": "bowls", pesto: "pasta",
-  "sheet-pan": "chicken", "grilled-cheese": "toast",
-};
-// Each option: [name, minutes, ingredient count, price band, existing artwork ID].
+
+// Each reference has four curated groups, from close swaps to new cuisines.
+// Explicit links also let a saved adventurous meal become a sensible new starting point.
 const remixFamilies = {
-  wraps: [
-    [["Cheesy chicken tacos", 15, 7, "$", "street-tacos"], ["Bean and cheese quesadillas", 15, 6, "$", "quesadilla"]],
-    [["Chicken enchilada skillet", 25, 9, "$$", "quesadilla"], ["Smoky black bean rice bowl", 20, 8, "$", "teriyaki"]],
-    [["Chickpea shawarma wraps", 25, 10, "$$", "breakfast-burrito"], ["Korean-style chicken tacos", 30, 11, "$$", "street-tacos"]],
-  ],
-  bowls: [
-    [["Honey soy chicken rice bowl", 20, 8, "$$", "teriyaki"], ["Garlic tofu rice bowl", 20, 8, "$", "teriyaki"]],
-    [["Crispy vegetable fried rice", 25, 9, "$", "teriyaki"], ["Stuffed sweet potatoes", 30, 9, "$", "sweet-potato"]],
-    [["Thai-style coconut curry bowl", 30, 11, "$$", "teriyaki"], ["Korean-style bibimbap", 35, 12, "$$", "teriyaki"]],
-  ],
-  pasta: [
-    [["Pesto pasta", 15, 6, "$", "pesto"], ["Spinach ricotta pasta", 20, 7, "$", "pesto"], ["Roasted tomato pasta", 20, 7, "$", "pesto"]],
-    [["Creamy tomato gnocchi", 25, 8, "$$", "pesto"], ["Spinach white bean skillet", 25, 9, "$", "sheet-pan"]],
-    [["Coconut chickpea curry", 30, 11, "$$", "teriyaki"], ["Peanut sesame noodles", 25, 10, "$$", "pesto"]],
-  ],
-  chicken: [
-    [["Lemon herb chicken tray bake", 30, 9, "$$", "sheet-pan"], ["Honey mustard chicken and carrots", 30, 9, "$$", "sheet-pan"]],
-    [["Creamy Tuscan chicken", 30, 10, "$$", "sheet-pan"], ["Chicken fajita skillet", 25, 9, "$$", "quesadilla"]],
-    [["Chicken tikka masala", 40, 12, "$$", "teriyaki"], ["Moroccan-style chicken couscous", 35, 11, "$$", "teriyaki"]],
-  ],
-  toast: [
-    [["Tomato mozzarella toast", 12, 6, "$", "grilled-cheese"], ["Spinach cheese melt", 15, 6, "$", "grilled-cheese"]],
-    [["Tomato white bean bake", 25, 8, "$", "sheet-pan"], ["Savory cheese bread pudding", 30, 8, "$", "grilled-cheese"]],
-    [["Shakshuka with toast", 30, 10, "$$", "sheet-pan"], ["Masala chickpea toast", 25, 10, "$", "grilled-cheese"]],
-  ],
+  quesadilla: ["chicken-tacos breakfast-burrito", "enchiladas breakfast-tacos", "southwest flatbread", "shawarma tikka"],
+  teriyaki: ["fried-rice beef-broccoli", "korean-beef southwest", "peanut-noodles sheet-pan", "tikka shawarma"],
+  pesto: ["alfredo tomato-pasta", "parmesan tuscan", "turkey-melt flatbread", "peanut-noodles tikka"],
+  "breakfast-burrito": ["breakfast-tacos quesadilla", "chicken-tacos street-tacos", "baked-potato southwest", "shawarma korean-beef"],
+  "sheet-pan": ["tuscan southwest", "shawarma chicken-tacos", "parmesan enchiladas", "tikka korean-beef"],
+  "grilled-cheese": ["turkey-melt tomato-soup", "flatbread tomato-pasta", "baked-potato parmesan", "lentil-curry shawarma"],
+  "street-tacos": ["chicken-tacos breakfast-tacos", "quesadilla breakfast-burrito", "chickpea-salad sweet-potato", "lentil-curry shawarma"],
+  "sweet-potato": ["baked-potato southwest", "chickpea-salad sheet-pan", "street-tacos breakfast-burrito", "lentil-curry tikka"],
+  alfredo: ["parmesan tomato-pasta", "pesto tuscan", "sheet-pan turkey-melt", "tikka peanut-noodles"],
+  parmesan: ["tomato-pasta alfredo", "pesto tuscan", "flatbread sheet-pan", "tikka shawarma"],
+  "tomato-pasta": ["pesto parmesan", "alfredo tomato-soup", "flatbread grilled-cheese", "lentil-curry tikka"],
+  tuscan: ["sheet-pan alfredo", "pesto parmesan", "shawarma flatbread", "tikka teriyaki"],
+  tikka: ["lentil-curry tuscan", "shawarma sheet-pan", "teriyaki korean-beef", "enchiladas parmesan"],
+  "chicken-tacos": ["quesadilla street-tacos", "enchiladas breakfast-burrito", "southwest flatbread", "shawarma korean-beef"],
+  enchiladas: ["quesadilla chicken-tacos", "breakfast-burrito southwest", "flatbread sheet-pan", "tikka shawarma"],
+  southwest: ["sweet-potato fried-rice", "chicken-tacos quesadilla", "enchiladas sheet-pan", "korean-beef shawarma"],
+  shawarma: ["chickpea-salad sheet-pan", "turkey-melt chicken-tacos", "tuscan southwest", "tikka korean-beef"],
+  "fried-rice": ["teriyaki beef-broccoli", "korean-beef southwest", "peanut-noodles breakfast-burrito", "tikka lentil-curry"],
+  "beef-broccoli": ["korean-beef teriyaki", "fried-rice southwest", "peanut-noodles sheet-pan", "shawarma tikka"],
+  "korean-beef": ["beef-broccoli teriyaki", "fried-rice peanut-noodles", "southwest chicken-tacos", "shawarma tikka"],
+  "peanut-noodles": ["teriyaki fried-rice", "beef-broccoli korean-beef", "pesto lentil-curry", "shawarma parmesan"],
+  "turkey-melt": ["grilled-cheese flatbread", "shawarma quesadilla", "pesto tomato-soup", "chicken-tacos tikka"],
+  "tomato-soup": ["grilled-cheese tomato-pasta", "parmesan flatbread", "tuscan baked-potato", "lentil-curry tikka"],
+  flatbread: ["turkey-melt grilled-cheese", "quesadilla parmesan", "enchiladas southwest", "shawarma tikka"],
+  "baked-potato": ["sweet-potato sheet-pan", "southwest grilled-cheese", "breakfast-burrito tomato-soup", "lentil-curry tikka"],
+  "breakfast-tacos": ["breakfast-burrito chicken-tacos", "quesadilla street-tacos", "fried-rice baked-potato", "shawarma korean-beef"],
+  "lentil-curry": ["tikka tomato-soup", "sweet-potato chickpea-salad", "peanut-noodles tuscan", "street-tacos enchiladas"],
+  "chickpea-salad": ["shawarma street-tacos", "sweet-potato southwest", "pesto sheet-pan", "lentil-curry peanut-noodles"],
 };
 
 function escapeHtml(value) {
@@ -139,33 +82,29 @@ function escapeHtml(value) {
   })[char]);
 }
 
-function getMealFamily(meal) {
-  return familyForMeal[meal.id] || (remixFamilies[meal.family] ? meal.family : "bowls");
+function referenceIdFor(meal) {
+  if (mealsById.has(meal.id)) return meal.id;
+  // Older generated variants retain their artwork/family, so they remain remixable.
+  if (mealsById.has(meal.artId)) return meal.artId;
+  return { wraps: "quesadilla", bowls: "teriyaki", pasta: "pesto", chicken: "sheet-pan", toast: "grilled-cheese" }[meal.family] || "teriyaki";
 }
 
 function recommendationsFor(reference, level) {
-  const family = getMealFamily(reference);
-  // Close variants always use the actual reference, even after saving a remix.
-  const rootName = reference.name.replace(/^(Garlicky|Herby) /i, "");
-  const options = level === 0 ? [
-    [`Herby ${rootName.charAt(0).toLowerCase() + rootName.slice(1)}`, reference.time, reference.ingredients + 1, reference.cost, reference.artId || reference.id],
-    [`Garlicky ${rootName.charAt(0).toLowerCase() + rootName.slice(1)}`, reference.time + 5, reference.ingredients, reference.cost, reference.artId || reference.id],
-  ] : remixFamilies[family][level - 1];
-  return options.filter(([name]) => name.toLowerCase() !== reference.name.toLowerCase()).map(([name, time, ingredients, cost, artId]) => {
-    const id = mealDeck.find((meal) => meal.name === name)?.id ||
-      `${family}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-    const familiarIngredients = Math.min(reference.ingredients, ingredients - [1, 2, 3, 5][level]);
-    return {
-      id, name, time, ingredients, cost, artId, family,
-      difficulty: time > 30 ? "Medium" : "Easy",
-      image: createMealArt({ id: artId }),
-      familiarity: [92, 78, 58, 35][level], familiarIngredients,
-      newIngredients: ingredients - familiarIngredients,
-      timeDifference: time - reference.time,
-      priceDifference: cost.length === reference.cost.length ? "Similar price" : cost.length > reference.cost.length ? "Higher price" : "Lower price",
-      remixOf: reference.name, noveltyLevel: level,
-    };
-  });
+  return remixFamilies[referenceIdFor(reference)][level].split(" ")
+    .map((id) => mealsById.get(id))
+    .filter((meal) => meal.id !== reference.id)
+    .map((meal, index) => {
+      const familiarIngredients = Math.max(0, Math.min(reference.ingredients, meal.ingredients - [1, 2, 4, 6][level]));
+      return {
+        ...meal, image: meal.image || createMealArt(meal),
+        // Illustrative change estimates; time and price compare the actual reference.
+        familiarity: [92, 78, 58, 35][level] - index * 3,
+        familiarIngredients, newIngredients: meal.ingredients - familiarIngredients,
+        timeDifference: meal.time - reference.time,
+        priceDifference: meal.cost.length === reference.cost.length ? "Similar price" : meal.cost.length > reference.cost.length ? "Higher price" : "Lower price",
+        remixOf: reference.name, noveltyLevel: level,
+      };
+    });
 }
 
 function resetRecommendations(reference = state.remixMeal, level = state.familiarityLevel) {
@@ -178,18 +117,10 @@ function resetRecommendations(reference = state.remixMeal, level = state.familia
   state.lastAction = null;
   clearToast();
   // Normal Explore assumes a small student meal rotation; no history is inferred.
-  state.recommendations = (reference ? [reference] : mealDeck).flatMap((meal) => recommendationsFor(meal, level))
+  const usualMeals = ["quesadilla", "teriyaki", "alfredo", "grilled-cheese", "sweet-potato", "breakfast-burrito", "street-tacos"];
+  state.recommendations = (reference ? [reference] : usualMeals.map((id) => mealsById.get(id)))
+    .flatMap((meal) => recommendationsFor(meal, level))
     .filter((meal, index, meals) => meals.findIndex((other) => other.id === meal.id) === index);
-  if (!reference && level === 1) {
-    const usualMeals = ["Chicken tacos", "Chicken and rice", "Buttered pasta", "Scrambled eggs on toast",
-      "Roast chicken", "Cheese toast", "Bean tacos", "Baked potatoes"];
-    const originals = mealDeck.map((meal, index) => ({
-      ...meal, family: getMealFamily(meal), familiarity: 78,
-      familiarIngredients: meal.ingredients - 2, newIngredients: 2,
-      timeDifference: 0, priceDifference: "Similar price", remixOf: usualMeals[index], noveltyLevel: 1,
-    }));
-    state.recommendations = [...originals, ...state.recommendations.filter((meal) => !mealDeck.some((original) => original.id === meal.id))];
-  }
   elements.dial.value = String(level);
   elements.dial.setAttribute("aria-valuetext", familiarityLabels[level]);
   elements.dialLabel.textContent = familiarityLabels[level];
@@ -213,7 +144,7 @@ function createMealArt(meal) {
     "sweet-potato": ["#e4bd8f", "#b66d4e", "#58403a"],
   };
 
-  const [background, accent, shadow] = themes[meal.id] || [
+  const [background, accent, shadow] = themes[meal.artId || meal.id] || [
     "#e9d9c5",
     "#c9895a",
     "#6f5442",
@@ -384,11 +315,36 @@ function createMealArt(meal) {
     `,
   };
 
+  const sceneId = meal.artId || meal.id;
+  const food = meal.foodColor || accent;
+  const garnish = `<g fill="#6f9256"><ellipse cx="530" cy="440" rx="28" ry="12" transform="rotate(-25 530 440)"/><ellipse cx="685" cy="545" rx="25" ry="11"/></g>`;
+  const bowl = `<ellipse cx="600" cy="520" rx="265" ry="175" fill="#4a6170" filter="url(#softShadow)"/><ellipse cx="600" cy="490" rx="238" ry="140" fill="#f4e8d3"/>`;
+  const chunks = Array.from({ length: 9 }, (_, i) => `<rect x="${440 + (i % 3) * 105}" y="${405 + Math.floor(i / 3) * 62}" width="65" height="40" rx="15" fill="${food}" transform="rotate(${i % 2 ? 12 : -12} ${470 + (i % 3) * 105} ${425 + Math.floor(i / 3) * 62})"/>`).join("");
+  const noodles = Array.from({ length: 5 }, (_, i) => `<path d="M440 ${420 + i * 30}q70-70 150 0t170 0" fill="none" stroke="${food}" stroke-width="19" stroke-linecap="round"/>`).join("");
+  const extraScenes = {
+    pasta: `${plate}${noodles}${garnish}<circle cx="720" cy="450" r="22" fill="#b84f3d"/>`,
+    noodles: `${bowl}${noodles}<path d="M430 460l310 70M475 550l210-130" stroke="#85a46b" stroke-width="13"/>`,
+    rice: `${bowl}${chunks}<g fill="#76965c"><circle cx="450" cy="480" r="28"/><circle cx="735" cy="435" r="31"/><circle cx="720" cy="560" r="26"/></g>`,
+    curry: `${bowl}<ellipse cx="600" cy="495" rx="205" ry="115" fill="${food}"/><path d="M485 485q100-75 220 20t-130 45" fill="none" stroke="#f4dbac" stroke-width="12"/>${garnish}`,
+    soup: `${bowl}<ellipse cx="600" cy="495" rx="205" ry="115" fill="${food}"/><ellipse cx="600" cy="490" rx="90" ry="45" fill="none" stroke="#f3d6ae" stroke-width="10"/><rect x="825" y="480" width="95" height="160" rx="30" fill="#d4a369" transform="rotate(20 870 550)"/>${garnish}`,
+    skillet: `<circle cx="600" cy="490" r="225" fill="#3e3933"/><rect x="790" y="460" width="180" height="48" rx="22" fill="#3e3933"/><ellipse cx="600" cy="490" rx="198" ry="177" fill="#f3e3bd"/>${chunks}${garnish}`,
+    baked: `<rect x="285" y="325" width="630" height="335" rx="45" fill="#667e8c"/><rect x="315" y="350" width="570" height="280" rx="25" fill="${food}"/>${[0,1,2,3].map(i => `<rect x="${355+i*125}" y="380" width="95" height="220" rx="40" fill="#e9b879"/>`).join("")}<path d="M340 430h510m-510 85h510m-510 60h510" stroke="#b45840" stroke-width="18"/>${garnish}`,
+    wrap: `${plate}<g transform="rotate(-18 600 490)"><rect x="420" y="395" width="350" height="180" rx="85" fill="#e3c192"/><ellipse cx="735" cy="485" rx="45" ry="80" fill="${food}"/><path d="M460 420l50 135m25-140l50 145" stroke="#c39865" stroke-width="9"/><circle cx="735" cy="460" r="22" fill="#809961"/></g>`,
+    sandwich: `${plate}<path d="M410 500l190-150 195 150-190 130Z" fill="#be7d46"/><path d="M420 485l180-125 175 125-170 110Z" fill="${food}"/><path d="M410 455l190-150 195 150-190 115Z" fill="#e0b675"/><path d="M520 395l130 100m-75-140l135 100" stroke="#aa743e" stroke-width="12"/>`,
+    flatbread: `${plate}<ellipse cx="600" cy="490" rx="235" ry="135" fill="#d7aa6e"/><ellipse cx="600" cy="490" rx="205" ry="108" fill="${food}"/>${chunks}<path d="M435 465l330 55m-290 45l230-140" stroke="#ebd3a0" stroke-width="12"/>${garnish}`,
+    potato: `${plate}<ellipse cx="600" cy="490" rx="205" ry="115" fill="#a8784e"/><path d="M430 490q170-155 340 0-170 125-340 0" fill="${food}"/><path d="M470 475l230 45m-205 25l170-100" stroke="#f4e4b4" stroke-width="16"/>${garnish}`,
+    salad: `${bowl}<ellipse cx="600" cy="490" rx="215" ry="118" fill="#8fa46e"/>${chunks}<g fill="#c35e47"><circle cx="480" cy="445" r="24"/><circle cx="720" cy="530" r="26"/></g><g fill="#efe4c8"><rect x="580" y="430" width="30" height="28"/><rect x="535" y="520" width="30" height="28"/></g>`,
+  };
+  let scene = extraScenes[sceneId] || scenes[sceneId] || scenes.teriyaki;
+  // Shared structures receive distinct food colors and toppings, not just a new label.
+  if (meal.foodColor && scenes[sceneId]) {
+    scene = scene.replace(/#e9b975|#c76b52|#d98b54|#c8d885/g, meal.foodColor);
+  }
   return svgDataUri(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="${escapeHtml(meal.name || "Meal illustration")}">
       ${common}
       ${sparkles}
-      ${scenes[meal.id] || plate}
+      ${scene}
     </svg>
   `);
 }
@@ -429,11 +385,18 @@ const state = {
     currentX: 0,
     currentY: 0,
   },
+  pendingRemoval: null,
+  removalTrigger: null,
   toastTimer: null,
   toastUndoHandler: null,
 };
 
 const elements = {
+  removeDialog: document.getElementById("remove-dialog"),
+  removeDescription: document.getElementById("remove-description"),
+  removeError: document.getElementById("remove-error"),
+  cancelRemove: document.getElementById("cancel-remove"),
+  confirmRemove: document.getElementById("confirm-remove"),
   dial: document.getElementById("familiarity-dial"),
   dialLabel: document.getElementById("familiarity-label"),
   remixContext: document.getElementById("remix-context"),
@@ -477,7 +440,7 @@ function loadSavedMeals() {
         ingredients: Number.isInteger(meal.ingredients) && meal.ingredients > 0 ? meal.ingredients : base.ingredients,
         cost: ["$", "$$", "$$$"].includes(meal.cost) ? meal.cost : base.cost,
         difficulty: ["Easy", "Medium", "Hard"].includes(meal.difficulty) ? meal.difficulty : base.difficulty,
-        image: createMealArt({ id: meal.artId || meal.id }),
+        image: createMealArt(original || { ...meal, id: meal.artId || meal.id }),
       };
     });
   } catch {
@@ -604,6 +567,34 @@ function removeSavedMeal(id) {
   state.savedMeals = state.savedMeals.filter((meal) => meal.id !== id);
   persistSavedMeals();
   updateSavedBadge();
+}
+
+function requestRemoval(meal, trigger) {
+  clearToast();
+  state.pendingRemoval = meal;
+  state.removalTrigger = trigger;
+  elements.removeDescription.textContent = `${meal.name} will be removed from your saved meals.`;
+  elements.removeError.classList.add("hidden");
+  elements.removeDialog.showModal();
+  elements.cancelRemove.focus();
+}
+
+function confirmRemoval() {
+  const meal = state.pendingRemoval;
+  if (!meal) return;
+  const previousMeals = state.savedMeals;
+  state.savedMeals = state.savedMeals.filter((entry) => entry.id !== meal.id);
+  if (!persistSavedMeals()) {
+    state.savedMeals = previousMeals;
+    elements.removeError.textContent = "Couldn't update saved meals. Please try again.";
+    elements.removeError.classList.remove("hidden");
+    return;
+  }
+  if (state.remixMeal?.id === meal.id) resetRecommendations(null, 1);
+  state.lastAction = null;
+  renderSaved();
+  elements.removeDialog.close();
+  showToast("Meal removed.");
 }
 
 function undoLastAction() {
@@ -938,12 +929,31 @@ function renderSaved() {
       elements.dial.focus();
       window.scrollTo({ top: 0 });
     });
-    card.querySelector(".saved-card-body").appendChild(remixButton);
+    const actions = document.createElement("div");
+    actions.className = "saved-card-actions";
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "remove-button";
+    removeButton.textContent = "Remove";
+    removeButton.setAttribute("aria-label", `Remove ${meal.name}`);
+    removeButton.addEventListener("click", () => requestRemoval(meal, removeButton));
+    actions.append(remixButton, removeButton);
+    card.querySelector(".saved-card-body").appendChild(actions);
     elements.savedResults.appendChild(card);
   });
 }
 
 function bindNavigation() {
+  elements.cancelRemove.addEventListener("click", () => elements.removeDialog.close());
+  elements.confirmRemove.addEventListener("click", confirmRemoval);
+  // Native dialog provides focus containment, an inert backdrop, and Escape handling.
+  elements.removeDialog.addEventListener("close", () => {
+    const trigger = state.removalTrigger;
+    state.pendingRemoval = null;
+    state.removalTrigger = null;
+    if (trigger?.isConnected) trigger.focus();
+    else (elements.savedResults.querySelector(".remix-button") || document.querySelector(".filter-chip.active"))?.focus();
+  });
   elements.dial.addEventListener("input", () => resetRecommendations(state.remixMeal, Number(elements.dial.value)));
   document.addEventListener("click", (event) => {
     const navTarget = event.target.closest("[data-nav]");

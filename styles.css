@@ -210,47 +210,28 @@ img {
   justify-content: center;
 }
 
+/* In-flow image rows reserve their own space above and below the hero. */
 .landing-art {
-  position: absolute;
-  inset: 16px 0 80px;
-  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
   pointer-events: none;
+  flex-shrink: 0;
 }
-
 .landing-art-item {
-  position: absolute;
-  width: clamp(82px, 18vw, 124px);
-  height: clamp(82px, 18vw, 124px);
+  width: clamp(76px, 22vw, 108px);
+  height: clamp(76px, 22vw, 108px);
   object-fit: cover;
   border-radius: 24px;
   box-shadow: 0 18px 28px rgba(58, 43, 31, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.66);
   opacity: 0.95;
 }
-
-.art-1 {
-  top: 18px;
-  left: 2px;
-  transform: rotate(-12deg);
-}
-
-.art-2 {
-  top: 0;
-  right: 4px;
-  transform: rotate(11deg);
-}
-
-.art-3 {
-  bottom: 122px;
-  left: 6px;
-  transform: rotate(8deg);
-}
-
-.art-4 {
-  bottom: 88px;
-  right: 18px;
-  transform: rotate(-8deg);
-}
+.art-1 { transform: rotate(-12deg) translateY(3px); }
+.art-2 { transform: rotate(11deg) translateY(-3px); }
+.art-3 { transform: rotate(8deg) translateY(-3px); }
+.art-4 { transform: rotate(-8deg) translateY(3px); }
 
 .hero-card,
 .saved-card,
@@ -912,4 +893,47 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
   .screen[data-screen="discover"] { gap: 10px; }
   .card-media { height: 125px; }
   .familiarity-control { padding-block: 8px; }
+}
+
+.saved-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.remove-button {
+  min-height: 44px;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.remove-button:hover { color: #8e4933; }
+.remove-dialog {
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: #fbf7f1;
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.remove-dialog::backdrop { background: rgba(42, 35, 30, 0.35); backdrop-filter: blur(3px); }
+.remove-dialog h2 { margin: 0; font-family: "Fraunces", Georgia, serif; font-size: 1.65rem; }
+.remove-dialog p { color: var(--muted); line-height: 1.55; overflow-wrap: anywhere; }
+.dialog-actions { display: flex; gap: 12px; margin-top: 22px; }
+.dialog-actions button { flex: 1; }
+.destructive-button { background: #985139; box-shadow: none; }
+body:has(.remove-dialog[open]) { overflow: hidden; }
+
+@media (max-height: 740px) {
+  .landing-art { padding-block: 10px; }
+  .landing-art-item { width: 72px; height: 72px; }
+}
+/* On very short windows, let Home scroll as a complete composition. */
+@media (max-height: 600px) {
+  .app-shell:has(#home-screen.active) .bottom-nav { position: relative; bottom: auto; }
 }
