@@ -96,6 +96,107 @@ const mealDeck = [
   },
 ];
 
+// Curated prototype families, ordered from small swaps to new preparations/cuisines.
+// These are illustrative estimates, not learned preferences or recipe calculations.
+const familiarityLabels = ["Very Familiar", "A Little Different", "Something New", "Adventurous"];
+const familyForMeal = {
+  quesadilla: "wraps", "breakfast-burrito": "wraps", "street-tacos": "wraps",
+  teriyaki: "bowls", "sweet-potato": "bowls", pesto: "pasta",
+  "sheet-pan": "chicken", "grilled-cheese": "toast",
+};
+// Each option: [name, minutes, ingredient count, price band, existing artwork ID].
+const remixFamilies = {
+  wraps: [
+    [["Cheesy chicken tacos", 15, 7, "$", "street-tacos"], ["Bean and cheese quesadillas", 15, 6, "$", "quesadilla"]],
+    [["Chicken enchilada skillet", 25, 9, "$$", "quesadilla"], ["Smoky black bean rice bowl", 20, 8, "$", "teriyaki"]],
+    [["Chickpea shawarma wraps", 25, 10, "$$", "breakfast-burrito"], ["Korean-style chicken tacos", 30, 11, "$$", "street-tacos"]],
+  ],
+  bowls: [
+    [["Honey soy chicken rice bowl", 20, 8, "$$", "teriyaki"], ["Garlic tofu rice bowl", 20, 8, "$", "teriyaki"]],
+    [["Crispy vegetable fried rice", 25, 9, "$", "teriyaki"], ["Stuffed sweet potatoes", 30, 9, "$", "sweet-potato"]],
+    [["Thai-style coconut curry bowl", 30, 11, "$$", "teriyaki"], ["Korean-style bibimbap", 35, 12, "$$", "teriyaki"]],
+  ],
+  pasta: [
+    [["Pesto pasta", 15, 6, "$", "pesto"], ["Spinach ricotta pasta", 20, 7, "$", "pesto"], ["Roasted tomato pasta", 20, 7, "$", "pesto"]],
+    [["Creamy tomato gnocchi", 25, 8, "$$", "pesto"], ["Spinach white bean skillet", 25, 9, "$", "sheet-pan"]],
+    [["Coconut chickpea curry", 30, 11, "$$", "teriyaki"], ["Peanut sesame noodles", 25, 10, "$$", "pesto"]],
+  ],
+  chicken: [
+    [["Lemon herb chicken tray bake", 30, 9, "$$", "sheet-pan"], ["Honey mustard chicken and carrots", 30, 9, "$$", "sheet-pan"]],
+    [["Creamy Tuscan chicken", 30, 10, "$$", "sheet-pan"], ["Chicken fajita skillet", 25, 9, "$$", "quesadilla"]],
+    [["Chicken tikka masala", 40, 12, "$$", "teriyaki"], ["Moroccan-style chicken couscous", 35, 11, "$$", "teriyaki"]],
+  ],
+  toast: [
+    [["Tomato mozzarella toast", 12, 6, "$", "grilled-cheese"], ["Spinach cheese melt", 15, 6, "$", "grilled-cheese"]],
+    [["Tomato white bean bake", 25, 8, "$", "sheet-pan"], ["Savory cheese bread pudding", 30, 8, "$", "grilled-cheese"]],
+    [["Shakshuka with toast", 30, 10, "$$", "sheet-pan"], ["Masala chickpea toast", 25, 10, "$", "grilled-cheese"]],
+  ],
+};
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]);
+}
+
+function getMealFamily(meal) {
+  return familyForMeal[meal.id] || (remixFamilies[meal.family] ? meal.family : "bowls");
+}
+
+function recommendationsFor(reference, level) {
+  const family = getMealFamily(reference);
+  // Close variants always use the actual reference, even after saving a remix.
+  const rootName = reference.name.replace(/^(Garlicky|Herby) /i, "");
+  const options = level === 0 ? [
+    [`Herby ${rootName.charAt(0).toLowerCase() + rootName.slice(1)}`, reference.time, reference.ingredients + 1, reference.cost, reference.artId || reference.id],
+    [`Garlicky ${rootName.charAt(0).toLowerCase() + rootName.slice(1)}`, reference.time + 5, reference.ingredients, reference.cost, reference.artId || reference.id],
+  ] : remixFamilies[family][level - 1];
+  return options.filter(([name]) => name.toLowerCase() !== reference.name.toLowerCase()).map(([name, time, ingredients, cost, artId]) => {
+    const id = mealDeck.find((meal) => meal.name === name)?.id ||
+      `${family}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    const familiarIngredients = Math.min(reference.ingredients, ingredients - [1, 2, 3, 5][level]);
+    return {
+      id, name, time, ingredients, cost, artId, family,
+      difficulty: time > 30 ? "Medium" : "Easy",
+      image: createMealArt({ id: artId }),
+      familiarity: [92, 78, 58, 35][level], familiarIngredients,
+      newIngredients: ingredients - familiarIngredients,
+      timeDifference: time - reference.time,
+      priceDifference: cost.length === reference.cost.length ? "Similar price" : cost.length > reference.cost.length ? "Higher price" : "Lower price",
+      remixOf: reference.name, noveltyLevel: level,
+    };
+  });
+}
+
+function resetRecommendations(reference = state.remixMeal, level = state.familiarityLevel) {
+  clearTimeout(state.advanceTimer);
+  state.animating = false;
+  state.drag.active = false;
+  state.remixMeal = reference;
+  state.familiarityLevel = level;
+  state.currentIndex = 0;
+  state.lastAction = null;
+  clearToast();
+  // Normal Explore assumes a small student meal rotation; no history is inferred.
+  state.recommendations = (reference ? [reference] : mealDeck).flatMap((meal) => recommendationsFor(meal, level))
+    .filter((meal, index, meals) => meals.findIndex((other) => other.id === meal.id) === index);
+  if (!reference && level === 1) {
+    const usualMeals = ["Chicken tacos", "Chicken and rice", "Buttered pasta", "Scrambled eggs on toast",
+      "Roast chicken", "Cheese toast", "Bean tacos", "Baked potatoes"];
+    const originals = mealDeck.map((meal, index) => ({
+      ...meal, family: getMealFamily(meal), familiarity: 78,
+      familiarIngredients: meal.ingredients - 2, newIngredients: 2,
+      timeDifference: 0, priceDifference: "Similar price", remixOf: usualMeals[index], noveltyLevel: 1,
+    }));
+    state.recommendations = [...originals, ...state.recommendations.filter((meal) => !mealDeck.some((original) => original.id === meal.id))];
+  }
+  elements.dial.value = String(level);
+  elements.dial.setAttribute("aria-valuetext", familiarityLabels[level]);
+  elements.dialLabel.textContent = familiarityLabels[level];
+  elements.remixContext.textContent = reference ? `Remixing ${reference.name}` : "Based on your usual meals";
+  renderDiscover();
+}
+
 function svgDataUri(svg) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -284,7 +385,7 @@ function createMealArt(meal) {
   };
 
   return svgDataUri(`
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="${meal.name}">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="${escapeHtml(meal.name || "Meal illustration")}">
       ${common}
       ${sparkles}
       ${scenes[meal.id] || plate}
@@ -311,6 +412,11 @@ function applyArtwork() {
 
 const state = {
   view: "home",
+  familiarityLevel: 1,
+  remixMeal: null,
+  recommendations: [],
+  animating: false,
+  advanceTimer: null,
   currentIndex: 0,
   savedMeals: loadSavedMeals(),
   filter: FILTERS.all,
@@ -328,6 +434,9 @@ const state = {
 };
 
 const elements = {
+  dial: document.getElementById("familiarity-dial"),
+  dialLabel: document.getElementById("familiarity-label"),
+  remixContext: document.getElementById("remix-context"),
   screens: document.querySelectorAll(".screen"),
   navItems: document.querySelectorAll("[data-nav]"),
   navButtons: document.querySelectorAll(".nav-item"),
@@ -358,29 +467,51 @@ function loadSavedMeals() {
       return [];
     }
 
-    return parsed.filter((meal) => meal && meal.id);
+    return parsed.filter((meal) => meal && typeof meal.id === "string").map((meal) => {
+      const original = mealDeck.find((entry) => entry.id === meal.id);
+      const base = original || { name: "Saved meal", time: 20, ingredients: 8, cost: "$", difficulty: "Easy" };
+      return {
+        ...meal,
+        name: typeof meal.name === "string" && meal.name ? meal.name : base.name,
+        time: Number.isFinite(meal.time) && meal.time > 0 ? meal.time : base.time,
+        ingredients: Number.isInteger(meal.ingredients) && meal.ingredients > 0 ? meal.ingredients : base.ingredients,
+        cost: ["$", "$$", "$$$"].includes(meal.cost) ? meal.cost : base.cost,
+        difficulty: ["Easy", "Medium", "Hard"].includes(meal.difficulty) ? meal.difficulty : base.difficulty,
+        image: createMealArt({ id: meal.artId || meal.id }),
+      };
+    });
   } catch {
     return [];
   }
 }
 
 function persistSavedMeals() {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.savedMeals));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.savedMeals));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function getCurrentMeal() {
-  return mealDeck[state.currentIndex] || null;
+  return state.recommendations[state.currentIndex] || null;
 }
 
 function nextMealIndex() {
   state.currentIndex += 1;
-  if (state.currentIndex >= mealDeck.length) {
-    state.currentIndex = mealDeck.length;
+  if (state.currentIndex >= state.recommendations.length) {
+    state.currentIndex = state.recommendations.length;
   }
   renderDiscover();
 }
 
 function openView(view) {
+  if (state.animating) {
+    clearTimeout(state.advanceTimer);
+    state.animating = false;
+  }
+  clearToast();
   state.view = view;
 
   elements.screens.forEach((screen) => {
@@ -434,6 +565,7 @@ function clearToast() {
   state.toastTimer = null;
   state.toastUndoHandler = null;
   elements.toast.classList.remove("visible");
+  elements.toastAction.hidden = true;
 }
 
 function isSaved(id) {
@@ -455,7 +587,7 @@ function saveMeal(meal) {
       },
       ...state.savedMeals,
     ];
-    persistSavedMeals();
+    state.storageAvailable = persistSavedMeals();
     updateSavedBadge();
   }
 
@@ -493,6 +625,7 @@ function undoLastAction() {
 }
 
 function advanceDeck(action) {
+  if (state.animating || state.view !== "discover") return;
   const currentMeal = getCurrentMeal();
   if (!currentMeal) {
     return;
@@ -503,6 +636,8 @@ function advanceDeck(action) {
     return;
   }
 
+  state.animating = true;
+  const restoreCardFocus = document.activeElement === card;
   const previousIndex = state.currentIndex;
   card.classList.remove("swiping-save", "swiping-skip", "dragging");
   card.style.transition = "transform 240ms ease, opacity 240ms ease";
@@ -512,7 +647,8 @@ function advanceDeck(action) {
       : "translateX(-125%) rotate(-14deg)";
   card.style.opacity = "0";
 
-  window.setTimeout(() => {
+  state.advanceTimer = window.setTimeout(() => {
+    state.animating = false;
     let addedToSaved = false;
 
     if (action === "save") {
@@ -529,15 +665,18 @@ function advanceDeck(action) {
     };
     window.__mealMatchLastAction = state.lastAction;
 
-    showUndoToast(action === "save" ? "Saved." : "Skipped.", undoLastAction);
+    showUndoToast(action === "save" ? (state.storageAvailable === false ? "Saved for this visit only. Storage unavailable." : addedToSaved ? "Saved." : "Already saved.") : "Skipped.", undoLastAction);
 
     nextMealIndex();
-  }, 260);
+    if (restoreCardFocus) elements.cardStack.querySelector(".top")?.focus();
+  }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 260);
 }
 
 function renderDiscover() {
   const currentMeal = getCurrentMeal();
-  const upcomingMeals = mealDeck.slice(
+  elements.skipButton.disabled = !currentMeal;
+  elements.saveButton.disabled = !currentMeal;
+  const upcomingMeals = state.recommendations.slice(
     state.currentIndex,
     state.currentIndex + 2,
   );
@@ -550,7 +689,7 @@ function renderDiscover() {
     endCard.innerHTML = `
       <div class="card-body card-empty-state">
         <h3>You're caught up.</h3>
-        <p>Come back later or review your saved meals.</p>
+        <p>Try another dial setting or revisit these ideas.</p>
         <div class="hero-actions" style="margin-top: 4px;">
           <button class="primary-button" type="button" data-nav="saved">Saved Meals</button>
           <button class="secondary-button" type="button" id="restart-discovery">Start Over</button>
@@ -558,11 +697,9 @@ function renderDiscover() {
       </div>
     `;
     elements.cardStack.appendChild(endCard);
-    elements.toastAction.hidden = true;
     const restartButton = endCard.querySelector("#restart-discovery");
     restartButton?.addEventListener("click", () => {
-      state.currentIndex = 0;
-      renderDiscover();
+      resetRecommendations();
     });
     return;
   }
@@ -580,6 +717,7 @@ function renderDiscover() {
   if (upcomingMeals.length === 1) {
     const ghostCard = document.createElement("article");
     ghostCard.className = "card-face back";
+    ghostCard.setAttribute("aria-hidden", "true");
     ghostCard.innerHTML = `
       <div class="card-body card-empty-state">
         <h3>More meals are on the way.</h3>
@@ -599,19 +737,25 @@ function createMealCard(meal, isInteractive) {
   card.className = "card-face card-interactive";
   card.dataset.mealId = meal.id;
   card.setAttribute("tabindex", isInteractive ? "0" : "-1");
-  card.setAttribute("role", isInteractive ? "button" : "presentation");
+  if (!isInteractive) card.setAttribute("aria-hidden", "true");
   card.setAttribute(
     "aria-label",
-    `${meal.name}, ${meal.time} minutes, ${meal.difficulty}`,
+    `${meal.name}, ${meal.time} minutes, ${meal.difficulty}. ${meal.familiarity}% familiar. Use left arrow to skip, right arrow to save.`,
   );
 
   card.innerHTML = `
     <div class="card-media">
-      <img src="${meal.image}" alt="${meal.name}" />
+      <img src="${meal.image}" alt="${escapeHtml(meal.name)}" />
     </div>
     <div class="card-body">
-      <h3>${meal.name}</h3>
+      <p class="card-context">Remixed from ${escapeHtml(meal.remixOf)}</p>
+      <h3>${escapeHtml(meal.name)}</h3>
       <p class="meta-band" aria-label="Meal details">${meal.time} min | ${meal.difficulty} | ${meal.ingredients} ingredients | ${meal.cost}</p>
+      <div class="familiarity-panel">
+        <div class="familiarity-heading"><strong>${meal.familiarity}% familiar</strong><span>Sample estimate</span></div>
+        <p>${meal.familiarIngredients} familiar ingredients · ${meal.newIngredients} new</p>
+        <p>${meal.timeDifference === 0 ? "Same cooking time" : `${meal.timeDifference > 0 ? "+" : "−"}${Math.abs(meal.timeDifference)} min`} · ${meal.priceDifference}</p>
+      </div>
     </div>
   `;
 
@@ -634,10 +778,14 @@ function attachDragHandlers(card) {
   card.addEventListener("pointerdown", onCardPointerDown);
   card.addEventListener("pointermove", onCardPointerMove);
   card.addEventListener("pointerup", onCardPointerUp);
-  card.addEventListener("pointercancel", onCardPointerUp);
+  card.addEventListener("pointercancel", (event) => {
+    state.drag.currentX = 0;
+    onCardPointerUp(event);
+  });
 }
 
 function onCardPointerDown(event) {
+  if (state.animating || !event.isPrimary || event.button !== 0) return;
   const card = event.currentTarget;
   if (!(card instanceof HTMLElement)) {
     return;
@@ -713,9 +861,10 @@ function updateSavedBadge() {
 
 function setFilter(filter) {
   state.filter = filter;
-  elements.filterChips.forEach((chip) =>
-    chip.classList.toggle("active", chip.dataset.filter === filter),
-  );
+  elements.filterChips.forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.filter === filter);
+    chip.setAttribute("aria-pressed", String(chip.dataset.filter === filter));
+  });
   renderSaved();
 }
 
@@ -767,9 +916,9 @@ function renderSaved() {
     const card = document.createElement("article");
     card.className = "saved-card";
     card.innerHTML = `
-      <img src="${meal.image}" alt="${meal.name}" />
+      <img src="${meal.image}" alt="${escapeHtml(meal.name)}" />
       <div class="saved-card-body">
-        <h3>${meal.name}</h3>
+        <h3>${escapeHtml(meal.name)}</h3>
         <p class="saved-meta">${meal.time} min · ${meal.difficulty}</p>
         <div class="meta-row">
           <span class="meta-pill">${meal.ingredients} ingredients</span>
@@ -778,16 +927,30 @@ function renderSaved() {
       </div>
     `;
 
+    const remixButton = document.createElement("button");
+    remixButton.className = "text-button remix-button";
+    remixButton.type = "button";
+    remixButton.textContent = "Remix";
+    remixButton.setAttribute("aria-label", `Remix ${meal.name}`);
+    remixButton.addEventListener("click", () => {
+      resetRecommendations(meal, 1);
+      openView("discover");
+      elements.dial.focus();
+      window.scrollTo({ top: 0 });
+    });
+    card.querySelector(".saved-card-body").appendChild(remixButton);
     elements.savedResults.appendChild(card);
   });
 }
 
 function bindNavigation() {
+  elements.dial.addEventListener("input", () => resetRecommendations(state.remixMeal, Number(elements.dial.value)));
   document.addEventListener("click", (event) => {
     const navTarget = event.target.closest("[data-nav]");
     if (navTarget instanceof HTMLElement) {
       const view = navTarget.dataset.nav;
       if (view) {
+        if (view === "discover" && navTarget.closest("#home-screen")) resetRecommendations(null, 1);
         openView(view);
       }
     }
@@ -817,7 +980,7 @@ function init() {
   elements.toastAction.hidden = true;
   window.__mealMatchUndoLastAction = undoLastAction;
   updateSavedBadge();
-  renderDiscover();
+  resetRecommendations(null, 1);
   renderSaved();
   openView("home");
 }
