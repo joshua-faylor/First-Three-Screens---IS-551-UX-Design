@@ -66,7 +66,7 @@
           </div>
 
           <div class="hero-card">
-            <h1 id="home-title">Find something worth eating.</h1>
+            <h1 id="home-title">Find meals worth eating.</h1>
             <div class="hero-actions">
               <button class="primary-button" type="button" data-nav="discover">
                 Explore Meals
@@ -84,6 +84,14 @@
           data-screen="discover"
           aria-label="Meal discovery"
         >
+          <div class="familiarity-control">
+            <p class="remix-context" id="remix-context">Based on your usual meals</p>
+            <h2><label for="familiarity-dial">How different do you want to go?</label></h2>
+            <input id="familiarity-dial" type="range" min="0" max="3" step="1" value="1"
+              aria-label="How different do you want to go?" aria-valuetext="A Little Different" />
+            <div class="dial-endpoints" aria-hidden="true"><span>Familiar</span><span>Different</span></div>
+            <output id="familiarity-label" for="familiarity-dial">A Little Different</output>
+          </div>
           <div class="deck-stage">
             <div
               class="card-stack"
@@ -138,16 +146,16 @@
 
           <div
             class="filter-row"
-            role="tablist"
+            role="group"
             aria-label="Saved meal filters"
           >
-            <button class="filter-chip active" type="button" data-filter="all">
+            <button class="filter-chip active" type="button" data-filter="all" aria-pressed="true">
               All
             </button>
-            <button class="filter-chip" type="button" data-filter="quick">
+            <button class="filter-chip" type="button" data-filter="quick" aria-pressed="false">
               Quick
             </button>
-            <button class="filter-chip" type="button" data-filter="cheap">
+            <button class="filter-chip" type="button" data-filter="cheap" aria-pressed="false">
               Cheap
             </button>
           </div>
@@ -237,10 +245,6 @@
           class="toast-action"
           type="button"
           id="toast-action"
-          onclick="
-            window.__mealMatchUndoLastAction &&
-              window.__mealMatchUndoLastAction()
-          "
         >
           Undo
         </button>
